@@ -53,8 +53,13 @@ const MUSIC_TRACKS={bgm:"data:audio/mpeg;base64,SUQzBAAAAAI8W1RJVDIAAAALAAADbmlt
 const musicPlayer=new Audio();musicPlayer.preload='none';musicPlayer.volume=0.18;
 let musicOn=true,sfxOn=true,audioUnlocked=false,currentTrack='bgm',soundCtx=null;
 function beginAudio(){
+ // On iOS, create and unlock Web Audio synchronously inside a user gesture.
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(AC && !soundCtx) soundCtx=new AC();
+  if(soundCtx && soundCtx.state!=='running') soundCtx.resume().catch(()=>{});
+ }catch(e){console.warn('Audio initialization:',e);}
  if(!audioUnlocked){audioUnlocked=true;document.getElementById('audioHint').textContent='BGM 18% ／ 効果音 約65%';setTrack(currentTrack,true);}
- if(soundCtx?.state==='suspended')soundCtx.resume().catch(()=>{});
 }
 function setTrack(type,force=false){
  if(currentTrack===type&&!force)return;
@@ -94,6 +99,7 @@ function syncAudioButtons(){
 document.getElementById('musicToggle').addEventListener('click',()=>{beginAudio();musicOn=!musicOn;if(musicOn)musicPlayer.play().catch(()=>{});else musicPlayer.pause();syncAudioButtons()});
 document.getElementById('sfxToggle').addEventListener('click',()=>{beginAudio();sfxOn=!sfxOn;syncAudioButtons();if(sfxOn)fx('select')});
 document.addEventListener('pointerdown',beginAudio,{once:true});
+document.addEventListener('touchstart',beginAudio,{once:true,passive:true});
 document.addEventListener('keydown',beginAudio,{once:true});
 
 reset();
